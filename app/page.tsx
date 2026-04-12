@@ -43,7 +43,7 @@ export default function Dashboard() {
     load();
   }, [load]);
 
-  const allCampaigns = [...new Set(allData.map((r) => r.campaignName))].sort();
+  const allCampaigns = Array.from(new Set(allData.map((r) => r.campaignName))).sort();
 
   useEffect(() => {
     setSelectedCampaigns(allCampaigns);

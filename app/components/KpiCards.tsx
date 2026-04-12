@@ -18,7 +18,8 @@ import {
   useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { KpiMetrics, formatMetricValue, calcPercentChange } from '../lib/calculations';
+import { KpiMetrics } from '../lib/types';
+import { formatMetricValue, calcPercentChange } from '../lib/calculations';
 
 interface KpiCard {
   id: string;
@@ -114,7 +115,6 @@ function SortableCard({ card }: SortableCardProps) {
       {...attributes}
       {...listeners}
       className="card p-4 cursor-grab active:cursor-grabbing select-none"
-      style={{ ...style, minWidth: 0 }}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="text-xs font-medium leading-tight" style={{ color: 'var(--color-text-muted)' }}>

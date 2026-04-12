@@ -121,8 +121,8 @@ export function calcDailyMetricsByCampaign(
   rows: DataRow[],
   metricKey: string
 ): { day: string; [campaign: string]: number | null | string }[] {
-  const allDays = [...new Set(rows.map((r) => r.day))].sort();
-  const allCampaigns = [...new Set(rows.map((r) => r.campaignName))];
+  const allDays = Array.from(new Set(rows.map((r) => r.day))).sort();
+  const allCampaigns = Array.from(new Set(rows.map((r) => r.campaignName)));
 
   return allDays.map((day) => {
     const result: { day: string; [key: string]: number | null | string } = { day };
