@@ -80,7 +80,7 @@ export default function CampaignChart({ rows }: CampaignChartProps) {
   const [selectedMetric, setSelectedMetric] = useState<string>('costPerLead');
   const [activeCampaigns, setActiveCampaigns] = useState<string[]>([]);
 
-  const campaigns = [...new Set(rows.map((r) => r.campaignName))];
+  const campaigns = Array.from(new Set(rows.map((r) => r.campaignName)));
   const totals = calcCampaignTotals(rows);
   const top5 = totals.sort((a, b) => b.amountSpent - a.amountSpent).slice(0, 5).map((t) => t.campaignName);
 
