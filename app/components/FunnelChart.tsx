@@ -1,19 +1,20 @@
 'use client';
 
 import { KpiMetrics } from '../lib/types';
-import { formatMetricValue } from '../lib/calculations';
 
 interface FunnelChartProps {
   metrics: KpiMetrics;
+  allCampaignsSelected: boolean;
 }
 
 const STAGES = [
-  { key: 'totalImpressions', label: 'Impresiones', color: '#2563EB' },
-  { key: 'totalClicks', label: 'Clics', color: '#8B5CF6' },
-  { key: 'totalLandingViews', label: 'Visitas VSL', color: '#14B8A6' },
-  { key: 'totalLeads', label: 'Leads', color: '#F97316' },
-  { key: 'totalSchedules', label: 'Schedules', color: '#EC4899' },
-  { key: 'totalCheckouts', label: 'Agendas Calif.', color: '#22c55e' },
+  { key: 'totalImpressions', label: 'Impresiones', color: '#2563EB', isGlobal: false },
+  { key: 'totalClicks', label: 'Clics', color: '#8B5CF6', isGlobal: false },
+  { key: 'totalLandingViews', label: 'Visitas VSL', color: '#14B8A6', isGlobal: false },
+  { key: 'totalLeads', label: 'Leads', color: '#F97316', isGlobal: false },
+  { key: 'totalSchedules', label: 'Schedules', color: '#EC4899', isGlobal: false },
+  { key: 'totalCheckouts', label: 'Agendas Calif.', color: '#22c55e', isGlobal: false },
+  { key: 'totalShows', label: 'Shows', color: '#EAB308', isGlobal: true },
 ];
 
 function conversionBadgeColor(pct: number | null): string {
@@ -23,7 +24,7 @@ function conversionBadgeColor(pct: number | null): string {
   return '#ef4444';
 }
 
-export default function FunnelChart({ metrics }: FunnelChartProps) {
+export default function FunnelChart({ metrics, allCampaignsSelected }: FunnelChartProps) {
   const values: Record<string, number> = {
     totalImpressions: metrics.totalImpressions,
     totalClicks: metrics.totalClicks,
@@ -31,6 +32,7 @@ export default function FunnelChart({ metrics }: FunnelChartProps) {
     totalLeads: metrics.totalLeads,
     totalSchedules: metrics.totalSchedules,
     totalCheckouts: metrics.totalCheckouts,
+    totalShows: metrics.totalShows,
   };
 
   const max = values.totalImpressions || 1;
@@ -48,7 +50,16 @@ export default function FunnelChart({ metrics }: FunnelChartProps) {
 
           const nextStage = STAGES[idx + 1];
           const nextValue = nextStage ? values[nextStage.key] || 0 : null;
-          const convPct = nextValue !== null && value > 0 ? (nextValue / value) * 100 : null;
+
+          // Shows conversion: only show % if all campaigns selected
+          let convPct: number | null = null;
+          if (nextValue !== null && value > 0) {
+            if (nextStage?.isGlobal && !allCampaignsSelected) {
+              convPct = null; // can't compare filtered agendas vs global shows
+            } else {
+              convPct = (nextValue / value) * 100;
+            }
+          }
 
           return (
             <div key={stage.key}>
@@ -62,14 +73,23 @@ export default function FunnelChart({ metrics }: FunnelChartProps) {
                     minWidth: 120,
                   }}
                 >
-                  <span className="text-xs font-medium" style={{ color: stage.color }}>
+                  <span className="text-xs font-medium flex items-center gap-1.5" style={{ color: stage.color }}>
                     {stage.label}
+                    {stage.isGlobal && (
+                      <span
+                        className="text-xs px-1.5 py-0.5 rounded"
+                        style={{ background: 'rgba(234,179,8,0.15)', color: '#eab308', fontSize: 9, fontFamily: 'sans-serif' }}
+                        title="Métrica global — no se desglosa por campaña porque el CSV de shows no contiene atribución por UTM."
+                      >
+                        global
+                      </span>
+                    )}
                   </span>
-                  <span
-                    className="ml-auto font-mono text-sm font-semibold"
-                    style={{ color: 'var(--color-text)' }}
-                  >
+                  <span className="ml-auto font-mono text-sm font-semibold" style={{ color: 'var(--color-text)' }}>
                     {value.toLocaleString('en-US')}
+                    {stage.isGlobal && !allCampaignsSelected && (
+                      <span className="ml-1 text-xs" title="Valor global, no filtrado por campaña">⚠</span>
+                    )}
                   </span>
                 </div>
               </div>

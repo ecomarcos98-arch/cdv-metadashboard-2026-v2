@@ -57,9 +57,17 @@ const formatDate = (d: string) => {
   try { return format(parseISO(d), 'dd/MM'); } catch { return d; }
 };
 
+interface LineConfig {
+  key: string;
+  label: string;
+  color: string;
+  yAxisId?: string;
+  isGlobal?: boolean;
+}
+
 interface ChartConfig {
   title: string;
-  lines: { key: string; label: string; color: string; yAxisId?: string }[];
+  lines: LineConfig[];
   formatValue: (name: string, value: number | null) => string;
   yAxisLeft?: string;
   yAxisRight?: string;
@@ -75,6 +83,7 @@ export default function TrendCharts({ dailyData }: TrendChartsProps) {
         { key: 'costPerLead', label: 'Costo/Lead', color: '#8B5CF6' },
         { key: 'costPerSchedule', label: 'Costo/Schedule', color: '#F97316' },
         { key: 'costPerCheckout', label: 'Costo/Agenda Calif.', color: '#2563EB' },
+        { key: 'costPerShow', label: 'Costo/Show ⚡', color: '#EAB308', isGlobal: true },
       ],
       formatValue: (_, v) => (v !== null ? `$${v.toFixed(2)}` : '—'),
     },
@@ -84,7 +93,8 @@ export default function TrendCharts({ dailyData }: TrendChartsProps) {
         { key: 'loadRate', label: '% Carga', color: '#8B5CF6' },
         { key: 'vslToLead', label: '% VSL→Lead', color: '#14B8A6' },
         { key: 'leadToSchedule', label: '% Lead→Schedule', color: '#EC4899' },
-        { key: 'scheduleToCheckout', label: '% Schedule→Agenda', color: '#EAB308' },
+        { key: 'scheduleToCheckout', label: '% Sched→Agenda', color: '#EAB308' },
+        { key: 'showRate', label: '% Asistencia ⚡', color: '#06B6D4', isGlobal: true },
       ],
       formatValue: (_, v) => (v !== null ? `${v.toFixed(1)}%` : '—'),
     },
@@ -95,6 +105,7 @@ export default function TrendCharts({ dailyData }: TrendChartsProps) {
         { key: 'leads', label: 'Leads', color: '#8B5CF6', yAxisId: 'right' },
         { key: 'appointmentsScheduled', label: 'Schedules', color: '#2563EB', yAxisId: 'right' },
         { key: 'checkoutsInitiated', label: 'Agendas Calif.', color: '#22c55e', yAxisId: 'right' },
+        { key: 'shows', label: 'Shows ⚡', color: '#EAB308', yAxisId: 'right', isGlobal: true },
       ],
       formatValue: (name, v) => {
         if (v === null) return '—';
@@ -133,9 +144,20 @@ export default function TrendCharts({ dailyData }: TrendChartsProps) {
 
         return (
           <div key={chartIdx} className="card p-5">
-            <h3 className="text-sm font-semibold mb-4" style={{ color: 'var(--color-text-muted)' }}>
-              {chart.title.toUpperCase()}
-            </h3>
+            <div className="flex items-center gap-2 mb-4">
+              <h3 className="text-sm font-semibold" style={{ color: 'var(--color-text-muted)' }}>
+                {chart.title.toUpperCase()}
+              </h3>
+              {chart.lines.some((l) => l.isGlobal) && (
+                <span
+                  className="text-xs px-1.5 py-0.5 rounded"
+                  style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308', fontSize: 9 }}
+                  title="Las líneas marcadas con ⚡ son globales y no responden al filtro de campaña"
+                >
+                  ⚡ incl. global
+                </span>
+              )}
+            </div>
 
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={dailyData} margin={{ top: 5, right: hasRightAxis ? 20 : 10, left: -10, bottom: 0 }}>

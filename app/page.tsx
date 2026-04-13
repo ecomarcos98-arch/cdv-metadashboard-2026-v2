@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import { fetchData } from './lib/fetchData';
+import { fetchShowsData, filterShowsByDateRange, totalShows } from './lib/fetchShowsData';
 import {
   calcKpiMetrics,
   calcCampaignTotals,
@@ -10,7 +11,7 @@ import {
   getDateRange,
   getPreviousDateRange,
 } from './lib/calculations';
-import { DataRow } from './lib/types';
+import { DataRow, ShowsByDay } from './lib/types';
 import DateFilter from './components/DateFilter';
 import CampaignFilter from './components/CampaignFilter';
 import KpiCards from './components/KpiCards';
@@ -22,7 +23,9 @@ import { format } from 'date-fns';
 
 export default function Dashboard() {
   const [allData, setAllData] = useState<DataRow[]>([]);
+  const [allShowsByDay, setAllShowsByDay] = useState<ShowsByDay>({});
   const [isExample, setIsExample] = useState(false);
+  const [showsUnavailable, setShowsUnavailable] = useState(false);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
 
@@ -32,9 +35,11 @@ export default function Dashboard() {
 
   const load = useCallback(async () => {
     setLoading(true);
-    const result = await fetchData();
-    setAllData(result.data);
-    setIsExample(result.isExample);
+    const [metaResult, showsResult] = await Promise.all([fetchData(), fetchShowsData()]);
+    setAllData(metaResult.data);
+    setIsExample(metaResult.isExample);
+    setAllShowsByDay(showsResult.showsByDay);
+    setShowsUnavailable(showsResult.unavailable);
     setLastUpdated(new Date());
     setLoading(false);
   }, []);
@@ -52,18 +57,34 @@ export default function Dashboard() {
   const dateRange = getDateRange(preset, customRange);
   const previousRange = getPreviousDateRange(dateRange);
 
+  // Meta rows filtered by date AND campaign
   const filteredRows = filterByDateRange(allData, dateRange.start, dateRange.end).filter((r) =>
     selectedCampaigns.includes(r.campaignName)
   );
 
+  // Meta rows filtered by date only (for global shows calculations)
+  const allCampaignRows = filterByDateRange(allData, dateRange.start, dateRange.end);
+  const allCampaignRowsPrev = filterByDateRange(allData, previousRange.start, previousRange.end);
+
+  // Shows are always global — filtered only by date
+  const currentShowsByDay = filterShowsByDateRange(allShowsByDay, dateRange.start, dateRange.end);
+  const prevShowsByDay = filterShowsByDateRange(allShowsByDay, previousRange.start, previousRange.end);
+
+  // For prev period meta (campaign-filtered)
   const prevRows = filterByDateRange(allData, previousRange.start, previousRange.end).filter((r) =>
     selectedCampaigns.includes(r.campaignName)
   );
 
-  const currentMetrics = calcKpiMetrics(filteredRows);
-  const prevMetrics = calcKpiMetrics(prevRows);
+  // KPI metrics: campaign-filtered meta + global shows
+  const currentMetrics = calcKpiMetrics(filteredRows, currentShowsByDay);
+  const prevMetrics = calcKpiMetrics(prevRows, prevShowsByDay);
+
   const campaignTotals = calcCampaignTotals(filteredRows);
-  const dailyMetrics = calcDailyMetrics(filteredRows);
+
+  // Daily metrics: merge campaign-filtered meta days + global shows
+  const dailyMetrics = calcDailyMetrics(filteredRows, currentShowsByDay);
+
+  const allCampaignsSelected = selectedCampaigns.length === allCampaigns.length;
 
   const handlePresetChange = (p: string, custom?: { start: string; end: string }) => {
     setPreset(p);
@@ -100,22 +121,24 @@ export default function Dashboard() {
             {isExample && (
               <span
                 className="text-xs px-3 py-1.5 rounded-lg"
-                style={{
-                  background: 'rgba(234,179,8,0.1)',
-                  color: '#eab308',
-                  border: '1px solid rgba(234,179,8,0.2)',
-                }}
+                style={{ background: 'rgba(234,179,8,0.1)', color: '#eab308', border: '1px solid rgba(234,179,8,0.2)' }}
               >
                 ⚠ Usando datos de ejemplo — configurá NEXT_PUBLIC_SHEET_CSV_URL_cdv en Vercel
               </span>
             )}
-
+            {showsUnavailable && (
+              <span
+                className="text-xs px-3 py-1.5 rounded-lg"
+                style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)' }}
+              >
+                ⚠ Datos de shows no configurados — agregá NEXT_PUBLIC_SHEET_CSV_URL_cdv_shows en Vercel
+              </span>
+            )}
             {lastUpdated && (
               <span className="text-xs" style={{ color: 'var(--color-text-muted)' }}>
                 Actualizado: {format(lastUpdated, 'HH:mm:ss')}
               </span>
             )}
-
             <button
               className="btn"
               onClick={load}
@@ -123,15 +146,7 @@ export default function Dashboard() {
               style={{ opacity: loading ? 0.6 : 1 }}
             >
               {loading ? (
-                <svg
-                  className="animate-spin"
-                  width="12"
-                  height="12"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
+                <svg className="animate-spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path d="M21 12a9 9 0 11-6.219-8.56" />
                 </svg>
               ) : (
@@ -166,15 +181,7 @@ export default function Dashboard() {
         {loading && allData.length === 0 ? (
           <div className="flex items-center justify-center py-32">
             <div className="text-center">
-              <svg
-                className="animate-spin mx-auto mb-3"
-                width="24"
-                height="24"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="#60a5fa"
-                strokeWidth="2"
-              >
+              <svg className="animate-spin mx-auto mb-3" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#60a5fa" strokeWidth="2">
                 <path d="M21 12a9 9 0 11-6.219-8.56" />
               </svg>
               <p style={{ color: 'var(--color-text-muted)' }}>Cargando datos...</p>
@@ -188,18 +195,62 @@ export default function Dashboard() {
           </div>
         ) : (
           <div className="flex flex-col gap-8">
+            {/* Global shows banner */}
+            <div
+              className="rounded-xl px-5 py-4"
+              style={{
+                background: 'rgba(234,179,8,0.06)',
+                border: '1px solid rgba(234,179,8,0.15)',
+              }}
+            >
+              <div className="flex items-center gap-2 mb-3">
+                <span className="text-xs font-semibold uppercase tracking-wider" style={{ color: '#eab308' }}>
+                  📊 Métricas Globales de Asistencia
+                </span>
+                <span className="text-xs" style={{ color: '#6b7280' }}>
+                  — no filtrables por campaña (el CSV de shows no contiene atribución por UTM)
+                </span>
+              </div>
+              <div className="grid grid-cols-3 gap-4">
+                {[
+                  { label: 'Shows', value: currentMetrics.totalShows, prev: prevMetrics.totalShows, fmt: (v: number) => v.toLocaleString('en-US'), dir: 'volume' },
+                  { label: 'Costo / Show', value: currentMetrics.costPerShow, prev: prevMetrics.costPerShow, fmt: (v: number | null) => v !== null ? `$${v.toFixed(2)}` : '—', dir: 'cost' },
+                  { label: '% Asistencia', value: currentMetrics.showRate, prev: prevMetrics.showRate, fmt: (v: number | null) => v !== null ? `${v.toFixed(1)}%` : '—', dir: 'percent' },
+                ].map((item) => {
+                  const change = item.prev !== null && item.prev !== 0 && item.value !== null
+                    ? ((item.value - item.prev) / Math.abs(item.prev)) * 100
+                    : null;
+                  let changeColor = '#6b7280';
+                  if (change !== null) {
+                    if (item.dir === 'cost') changeColor = change < 0 ? '#22c55e' : '#ef4444';
+                    else if (item.dir === 'percent') changeColor = change > 0 ? '#22c55e' : '#ef4444';
+                  }
+                  return (
+                    <div key={item.label}>
+                      <p className="text-xs mb-1" style={{ color: '#6b7280' }}>{item.label}</p>
+                      <p className="font-mono text-lg font-semibold" style={{ color: '#e8eaf0' }}>
+                        {item.fmt(item.value as number & null)}
+                      </p>
+                      {change !== null && (
+                        <span className="text-xs font-mono" style={{ color: changeColor }}>
+                          {change >= 0 ? '↑' : '↓'} {Math.abs(change).toFixed(1)}% vs ant.
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
             {/* KPI Cards */}
             <KpiCards current={currentMetrics} previous={prevMetrics} />
 
             {/* Funnel */}
-            <FunnelChart metrics={currentMetrics} />
+            <FunnelChart metrics={currentMetrics} allCampaignsSelected={allCampaignsSelected} />
 
             {/* Trend Charts */}
             <section>
-              <h2
-                className="text-xs font-semibold uppercase tracking-wider mb-4"
-                style={{ color: 'var(--color-text-muted)' }}
-              >
+              <h2 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--color-text-muted)' }}>
                 Tendencias
               </h2>
               <TrendCharts dailyData={dailyMetrics} />
