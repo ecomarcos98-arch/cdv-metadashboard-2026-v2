@@ -99,7 +99,7 @@ export default function Dashboard() {
       <header
         className="sticky top-0 z-40 px-6 py-3"
         style={{
-          background: 'rgba(10, 11, 15, 0.92)',
+          background: 'rgba(240, 242, 245, 0.92)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--color-border)',
         }}

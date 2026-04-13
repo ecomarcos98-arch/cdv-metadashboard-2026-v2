@@ -153,7 +153,7 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
       <div className="overflow-x-auto">
         <table className="w-full text-sm" style={{ minWidth: 1200 }}>
           <thead>
-            <tr style={{ borderBottom: '1px solid var(--color-border)', background: 'var(--color-surface-2)' }}>
+            <tr style={{ borderBottom: '1px solid var(--color-border)', background: '#f7f8fa' }}>
               <DndContext sensors={sensors} collisionDetection={closestCenter} onDragEnd={handleDragEnd}>
                 <SortableContext items={colOrder} strategy={horizontalListSortingStrategy}>
                   {orderedCols.map((col) => (
@@ -178,10 +178,10 @@ export default function CampaignTable({ campaigns }: CampaignTableProps) {
                   className="transition-colors"
                   style={{
                     borderBottom: '1px solid var(--color-border)',
-                    background: idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)',
+                    background: idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)',
                   }}
-                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(255,255,255,0.04)')}
-                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.01)')}
+                  onMouseEnter={(e) => ((e.currentTarget as HTMLElement).style.background = 'rgba(0,0,0,0.03)')}
+                  onMouseLeave={(e) => ((e.currentTarget as HTMLElement).style.background = idx % 2 === 0 ? 'transparent' : 'rgba(0,0,0,0.015)')}
                 >
                   {orderedCols.map((col) => {
                     const value = col.render(row);

@@ -19,12 +19,13 @@ interface TrendChartsProps {
 }
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#181b22',
-  border: '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: '#ffffff',
+  border: '1px solid rgba(0,0,0,0.1)',
   borderRadius: '12px',
   padding: '10px 14px',
-  color: '#e8eaf0',
+  color: '#1a1d23',
   fontSize: '12px',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
 };
 
 function CustomTooltip({ active, payload, label, formatValue }: {
@@ -39,12 +40,12 @@ function CustomTooltip({ active, payload, label, formatValue }: {
 
   return (
     <div style={TOOLTIP_STYLE}>
-      <p className="font-medium mb-2" style={{ color: '#e8eaf0', fontSize: 11 }}>{dateLabel}</p>
+      <p className="font-medium mb-2" style={{ color: '#1a1d23', fontSize: 11 }}>{dateLabel}</p>
       {payload.map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1">
           <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ background: p.color }} />
-          <span style={{ color: '#9ca3af', fontSize: 11 }}>{p.name}:</span>
-          <span className="font-mono" style={{ color: '#e8eaf0', fontSize: 11 }}>
+          <span style={{ color: '#6b7280', fontSize: 11 }}>{p.name}:</span>
+          <span className="font-mono" style={{ color: '#1a1d23', fontSize: 11 }}>
             {formatValue(p.name, p.value)}
           </span>
         </div>
@@ -161,17 +162,17 @@ export default function TrendCharts({ dailyData }: TrendChartsProps) {
 
             <ResponsiveContainer width="100%" height={220}>
               <LineChart data={dailyData} margin={{ top: 5, right: hasRightAxis ? 20 : 10, left: -10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
                 <XAxis
                   dataKey="day"
                   tickFormatter={formatDate}
-                  tick={{ fill: '#6b7280', fontSize: 10 }}
+                  tick={{ fill: '#9ca3af', fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
                 />
                 <YAxis
                   yAxisId="left"
-                  tick={{ fill: '#6b7280', fontSize: 10 }}
+                  tick={{ fill: '#9ca3af', fontSize: 10 }}
                   axisLine={false}
                   tickLine={false}
                   width={50}
@@ -180,7 +181,7 @@ export default function TrendCharts({ dailyData }: TrendChartsProps) {
                   <YAxis
                     yAxisId="right"
                     orientation="right"
-                    tick={{ fill: '#6b7280', fontSize: 10 }}
+                    tick={{ fill: '#9ca3af', fontSize: 10 }}
                     axisLine={false}
                     tickLine={false}
                     width={40}
@@ -188,13 +189,13 @@ export default function TrendCharts({ dailyData }: TrendChartsProps) {
                 )}
                 <Tooltip
                   content={<CustomTooltip formatValue={chart.formatValue} />}
-                  cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+                  cursor={{ stroke: 'rgba(0,0,0,0.08)', strokeWidth: 1 }}
                 />
                 <Legend
                   wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
                   onClick={(e) => toggleLine(chartIdx, e.dataKey as string)}
                   formatter={(value) => (
-                    <span style={{ color: '#9ca3af', cursor: 'pointer' }}>{value}</span>
+                    <span style={{ color: '#6b7280', cursor: 'pointer' }}>{value}</span>
                   )}
                 />
                 {chart.lines.map((line) => (

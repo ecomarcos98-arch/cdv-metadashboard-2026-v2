@@ -38,12 +38,13 @@ const METRICS: MetricOption[] = [
 ];
 
 const TOOLTIP_STYLE = {
-  backgroundColor: '#181b22',
-  border: '1px solid rgba(255,255,255,0.1)',
+  backgroundColor: '#ffffff',
+  border: '1px solid rgba(0,0,0,0.1)',
   borderRadius: '12px',
   padding: '10px 14px',
-  color: '#e8eaf0',
+  color: '#1a1d23',
   fontSize: '12px',
+  boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
 };
 
 function CustomTooltip({ active, payload, label, isCost }: {
@@ -58,12 +59,12 @@ function CustomTooltip({ active, payload, label, isCost }: {
 
   return (
     <div style={TOOLTIP_STYLE}>
-      <p className="font-medium mb-2" style={{ color: '#e8eaf0', fontSize: 11 }}>{dateLabel}</p>
+      <p className="font-medium mb-2" style={{ color: '#1a1d23', fontSize: 11 }}>{dateLabel}</p>
       {payload.filter((p) => p.value !== null).map((p) => (
         <div key={p.name} className="flex items-center gap-2 mb-1">
           <div className="w-2 h-2 rounded-full" style={{ background: p.color }} />
-          <span style={{ color: '#9ca3af', fontSize: 11 }}>{p.name}:</span>
-          <span className="font-mono" style={{ color: '#e8eaf0', fontSize: 11 }}>
+          <span style={{ color: '#6b7280', fontSize: 11 }}>{p.name}:</span>
+          <span className="font-mono" style={{ color: '#1a1d23', fontSize: 11 }}>
             {p.value !== null ? (isCost ? `$${p.value.toFixed(2)}` : `${p.value.toFixed(1)}%`) : '—'}
           </span>
         </div>
@@ -134,23 +135,23 @@ export default function CampaignChart({ rows }: CampaignChartProps) {
       ) : (
         <ResponsiveContainer width="100%" height={280}>
           <LineChart data={dailyByCampaign} margin={{ top: 5, right: 10, left: -10, bottom: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+            <CartesianGrid strokeDasharray="3 3" stroke="rgba(0,0,0,0.06)" />
             <XAxis
               dataKey="day"
               tickFormatter={formatDate}
-              tick={{ fill: '#6b7280', fontSize: 10 }}
+              tick={{ fill: '#9ca3af', fontSize: 10 }}
               axisLine={false}
               tickLine={false}
             />
             <YAxis
-              tick={{ fill: '#6b7280', fontSize: 10 }}
+              tick={{ fill: '#9ca3af', fontSize: 10 }}
               axisLine={false}
               tickLine={false}
               width={50}
             />
             <Tooltip
               content={<CustomTooltip isCost={metric.isCost} />}
-              cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }}
+              cursor={{ stroke: 'rgba(0,0,0,0.08)', strokeWidth: 1 }}
             />
             <Legend
               wrapperStyle={{ fontSize: 11, paddingTop: 10 }}
@@ -158,7 +159,7 @@ export default function CampaignChart({ rows }: CampaignChartProps) {
               formatter={(value) => (
                 <span
                   style={{
-                    color: activeCampaigns.includes(value) ? '#e8eaf0' : '#4b5563',
+                    color: activeCampaigns.includes(value) ? '#1a1d23' : '#d1d5db',
                     cursor: 'pointer',
                   }}
                 >
