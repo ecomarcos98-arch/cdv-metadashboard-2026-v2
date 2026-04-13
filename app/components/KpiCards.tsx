@@ -34,6 +34,8 @@ interface KpiCard {
 
 function buildCards(current: KpiMetrics, prev: KpiMetrics): { costs: KpiCard[]; percents: KpiCard[]; volumes: KpiCard[] } {
   const costs: KpiCard[] = [
+    { id: 'cpm', label: 'CPM', tooltip: 'Gasto / Impresiones × 1,000', value: current.cpm, prevValue: prev.cpm, type: 'cpm', changeDir: 'cost' },
+    { id: 'cpc', label: 'CPC', tooltip: 'Gasto / Clics únicos', value: current.cpc, prevValue: prev.cpc, type: 'cost', changeDir: 'cost' },
     { id: 'costPerLead', label: 'Costo / Lead', tooltip: 'Gasto / Leads', value: current.costPerLead, prevValue: prev.costPerLead, type: 'cost', changeDir: 'cost' },
     { id: 'costPerSchedule', label: 'Costo / Schedule', tooltip: 'Gasto / Schedules', value: current.costPerSchedule, prevValue: prev.costPerSchedule, type: 'cost', changeDir: 'cost' },
     { id: 'costPerCheckout', label: 'Costo / Agenda Calif.', tooltip: 'Gasto / Checkouts iniciados', value: current.costPerCheckout, prevValue: prev.costPerCheckout, type: 'cost', changeDir: 'cost' },
@@ -140,7 +142,7 @@ function SortableCard({ card }: { card: KpiCard }) {
         <div className="relative flex-shrink-0">
           <button
             className="w-4 h-4 rounded-full flex items-center justify-center text-xs"
-            style={{ background: 'rgba(0,0,0,0.07)', color: 'var(--color-text-muted)' }}
+            style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--color-text-muted)' }}
             onMouseEnter={() => setTooltipVisible(true)}
             onMouseLeave={() => setTooltipVisible(false)}
           >
@@ -150,12 +152,11 @@ function SortableCard({ card }: { card: KpiCard }) {
             <div
               className="absolute right-0 top-6 z-50 text-xs rounded-lg px-3 py-2"
               style={{
-                background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
+                background: 'var(--color-surface-2)',
+                border: '1px solid rgba(255,255,255,0.1)',
                 color: 'var(--color-text-muted)',
                 maxWidth: 220,
                 whiteSpace: 'normal',
-                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
               }}
             >
               {card.tooltip}
