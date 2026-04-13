@@ -24,6 +24,8 @@ export async function fetchShowsData(): Promise<{ showsByDay: ShowsByDay; isExam
           try {
             const showsByDay: ShowsByDay = {};
             (results.data as Record<string, string>[]).forEach((row) => {
+              const estado = (row['Estado'] || '').trim().toLowerCase();
+              if (estado !== 'showed') return;
               const day = row['Fecha limpia']?.trim();
               if (!day || !DATE_REGEX.test(day)) return;
               showsByDay[day] = (showsByDay[day] || 0) + 1;
