@@ -31,6 +31,7 @@ export default function Dashboard() {
 
   const [preset, setPreset] = useState('7d');
   const [customRange, setCustomRange] = useState<{ start: string; end: string } | undefined>();
+  const [customCompareRange, setCustomCompareRange] = useState<{ start: string; end: string } | undefined>();
   const [selectedCampaigns, setSelectedCampaigns] = useState<string[]>([]);
 
   const load = useCallback(async () => {
@@ -55,7 +56,7 @@ export default function Dashboard() {
   }, [allData.length]);
 
   const dateRange = getDateRange(preset, customRange);
-  const previousRange = getPreviousDateRange(dateRange);
+  const previousRange = customCompareRange ?? getPreviousDateRange(dateRange);
 
   // Meta rows filtered by date AND campaign
   const filteredRows = filterByDateRange(allData, dateRange.start, dateRange.end).filter((r) =>
@@ -89,6 +90,7 @@ export default function Dashboard() {
   const handlePresetChange = (p: string, custom?: { start: string; end: string }) => {
     setPreset(p);
     if (custom) setCustomRange(custom);
+    if (p !== 'custom') setCustomCompareRange(undefined);
   };
 
   const hasData = filteredRows.length > 0;
@@ -99,7 +101,7 @@ export default function Dashboard() {
       <header
         className="sticky top-0 z-40 px-6 py-3"
         style={{
-          background: 'rgba(10, 11, 15, 0.92)',
+          background: 'rgba(240, 242, 245, 0.92)',
           backdropFilter: 'blur(12px)',
           borderBottom: '1px solid var(--color-border)',
         }}
@@ -167,6 +169,7 @@ export default function Dashboard() {
             dateRange={dateRange}
             previousRange={previousRange}
             onPresetChange={handlePresetChange}
+            onCompareRangeChange={setCustomCompareRange}
           />
           <CampaignFilter
             campaigns={allCampaigns}

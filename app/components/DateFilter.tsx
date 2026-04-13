@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
-import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameMonth, isWithinInterval, isSameDay, parseISO } from 'date-fns';
+import { format, addMonths, subMonths, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, parseISO } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 interface DateFilterProps {
@@ -9,13 +9,128 @@ interface DateFilterProps {
   dateRange: { start: string; end: string };
   previousRange: { start: string; end: string };
   onPresetChange: (preset: string, custom?: { start: string; end: string }) => void;
+  onCompareRangeChange: (range: { start: string; end: string }) => void;
 }
 
-export default function DateFilter({ preset, dateRange, previousRange, onPresetChange }: DateFilterProps) {
+type SelectingStep = 'main-start' | 'main-end' | 'compare-start' | 'compare-end';
+
+interface MiniCalendarProps {
+  label: string;
+  highlightStart: string | null;
+  highlightEnd: string | null;
+  tempStart: string | null;
+  isSelectingEnd: boolean;
+  color: string;
+  onDayClick: (d: string) => void;
+}
+
+function MiniCalendar({ label, highlightStart, highlightEnd, tempStart, isSelectingEnd, color, onDayClick }: MiniCalendarProps) {
+  const [month, setMonth] = useState(new Date());
+  const days = eachDayOfInterval({ start: startOfMonth(month), end: endOfMonth(month) });
+  const startOffset = startOfMonth(month).getDay();
+
+  const toStr = (d: Date) => d.toISOString().split('T')[0];
+
+  const isStart = (d: Date) => toStr(d) === highlightStart;
+  const isEnd = (d: Date) => toStr(d) === highlightEnd;
+  const isTS = (d: Date) => isSelectingEnd && toStr(d) === tempStart;
+  const isInRange = (d: Date) => {
+    const s = toStr(d);
+    if (!highlightStart || !highlightEnd) return false;
+    return s > highlightStart && s < highlightEnd;
+  };
+  const isToday = (d: Date) => isSameDay(d, new Date());
+
+  return (
+    <div className="flex-1 min-w-0">
+      <div
+        className="text-xs font-semibold mb-3 px-1"
+        style={{ color }}
+      >
+        {label}
+      </div>
+
+      {/* Month nav */}
+      <div className="flex items-center justify-between mb-3">
+        <button
+          onClick={() => setMonth(subMonths(month, 1))}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-sm"
+          style={{ color: 'var(--color-text-muted)', background: 'rgba(0,0,0,0.05)' }}
+        >
+          ‹
+        </button>
+        <span className="text-xs font-medium capitalize" style={{ color: 'var(--color-text)' }}>
+          {format(month, 'MMM yyyy', { locale: es })}
+        </span>
+        <button
+          onClick={() => setMonth(addMonths(month, 1))}
+          className="w-7 h-7 flex items-center justify-center rounded-lg text-sm"
+          style={{ color: 'var(--color-text-muted)', background: 'rgba(0,0,0,0.05)' }}
+        >
+          ›
+        </button>
+      </div>
+
+      {/* Day headers */}
+      <div className="grid grid-cols-7 mb-1">
+        {['D', 'L', 'M', 'M', 'J', 'V', 'S'].map((d, i) => (
+          <div key={i} className="text-center text-xs py-0.5" style={{ color: 'var(--color-text-muted)' }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div className="grid grid-cols-7">
+        {Array.from({ length: startOffset }).map((_, i) => <div key={`e-${i}`} />)}
+        {days.map((day) => {
+          const s = isStart(day);
+          const e = isEnd(day);
+          const ts = isTS(day);
+          const inR = isInRange(day);
+          const tod = isToday(day);
+
+          return (
+            <button
+              key={day.toISOString()}
+              onClick={() => onDayClick(toStr(day))}
+              className="text-xs py-1.5 transition-all relative"
+              style={{
+                background: s || e || ts
+                  ? color
+                  : inR
+                  ? `${color}20`
+                  : 'transparent',
+                color: s || e || ts
+                  ? '#fff'
+                  : tod
+                  ? color
+                  : 'var(--color-text)',
+                fontWeight: s || e || ts ? 600 : 400,
+                borderRadius: s || ts ? '50% 0 0 50%' : e ? '0 50% 50% 0' : s && e ? '50%' : '0',
+              }}
+            >
+              {format(day, 'd')}
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+export default function DateFilter({
+  preset,
+  dateRange,
+  previousRange,
+  onPresetChange,
+  onCompareRangeChange,
+}: DateFilterProps) {
   const [calOpen, setCalOpen] = useState(false);
-  const [calMonth, setCalMonth] = useState(new Date());
-  const [selecting, setSelecting] = useState<'start' | 'end'>('start');
-  const [tempStart, setTempStart] = useState<string | null>(null);
+  const [step, setStep] = useState<SelectingStep>('main-start');
+
+  // Temp state while selecting
+  const [mainTempStart, setMainTempStart] = useState<string | null>(null);
+  const [compareTempStart, setCompareTempStart] = useState<string | null>(null);
+
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -35,50 +150,52 @@ export default function DateFilter({ preset, dateRange, previousRange, onPresetC
     { key: 'custom', label: 'Custom' },
   ];
 
-  const days = eachDayOfInterval({ start: startOfMonth(calMonth), end: endOfMonth(calMonth) });
-  const startOfWeek = startOfMonth(calMonth).getDay();
-
-  const handleDayClick = (date: Date) => {
-    const d = date.toISOString().split('T')[0];
-    if (selecting === 'start') {
-      setTempStart(d);
-      setSelecting('end');
-    } else {
-      const start = tempStart!;
-      const end = d;
-      if (start > end) {
-        setTempStart(d);
-        setSelecting('end');
-      } else {
-        onPresetChange('custom', { start, end });
-        setCalOpen(false);
-        setSelecting('start');
-        setTempStart(null);
-      }
-    }
-  };
-
-  const isInRange = (date: Date): boolean => {
-    const d = date.toISOString().split('T')[0];
-    if (selecting === 'end' && tempStart) {
-      return d >= tempStart && d <= (tempStart);
-    }
-    return d >= dateRange.start && d <= dateRange.end;
-  };
-
-  const isRangeDay = (date: Date): boolean => {
-    if (selecting === 'end' && tempStart) return false;
-    const d = date.toISOString().split('T')[0];
-    return d > dateRange.start && d < dateRange.end;
-  };
-
-  const isStart = (date: Date) => date.toISOString().split('T')[0] === dateRange.start;
-  const isEnd = (date: Date) => date.toISOString().split('T')[0] === dateRange.end;
-  const isTempStart = (date: Date) => selecting === 'end' && tempStart === date.toISOString().split('T')[0];
-
   const formatDateShort = (d: string) => {
     try { return format(parseISO(d), 'd MMM', { locale: es }); } catch { return d; }
   };
+
+  const handleMainDayClick = (d: string) => {
+    if (step === 'main-start') {
+      setMainTempStart(d);
+      setStep('main-end');
+    } else if (step === 'main-end') {
+      const start = mainTempStart!;
+      if (d < start) {
+        setMainTempStart(d);
+        return;
+      }
+      onPresetChange('custom', { start, end: d });
+      setMainTempStart(null);
+      setStep('compare-start');
+    }
+  };
+
+  const handleCompareDayClick = (d: string) => {
+    if (step === 'compare-start') {
+      setCompareTempStart(d);
+      setStep('compare-end');
+    } else if (step === 'compare-end') {
+      const start = compareTempStart!;
+      if (d < start) {
+        setCompareTempStart(d);
+        return;
+      }
+      onCompareRangeChange({ start, end: d });
+      setCompareTempStart(null);
+      setCalOpen(false);
+      setStep('main-start');
+    }
+  };
+
+  const stepLabels: Record<SelectingStep, string> = {
+    'main-start': 'Seleccioná fecha inicio del período principal',
+    'main-end': `Desde ${mainTempStart ? formatDateShort(mainTempStart) : '...'} → seleccioná fecha fin`,
+    'compare-start': 'Ahora seleccioná inicio del período de comparación',
+    'compare-end': `Comparar desde ${compareTempStart ? formatDateShort(compareTempStart) : '...'} → seleccioná fecha fin`,
+  };
+
+  const isMainStep = step === 'main-start' || step === 'main-end';
+  const isCompareStep = step === 'compare-start' || step === 'compare-end';
 
   return (
     <div className="flex items-center gap-3 flex-wrap">
@@ -90,10 +207,12 @@ export default function DateFilter({ preset, dateRange, previousRange, onPresetC
             onClick={() => {
               if (p.key === 'custom') {
                 setCalOpen(true);
-                setSelecting('start');
-                setTempStart(null);
+                setStep('main-start');
+                setMainTempStart(null);
+                setCompareTempStart(null);
               } else {
                 onPresetChange(p.key);
+                setCalOpen(false);
               }
             }}
           >
@@ -105,76 +224,112 @@ export default function DateFilter({ preset, dateRange, previousRange, onPresetC
       <div className="relative" ref={ref}>
         {calOpen && (
           <div
-            className="absolute top-10 left-0 z-50 rounded-xl shadow-2xl p-4"
-            style={{ background: 'var(--color-surface-2)', border: '1px solid rgba(255,255,255,0.1)', minWidth: 280 }}
+            className="absolute top-10 left-0 z-50 rounded-xl shadow-xl p-5"
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              width: 560,
+              boxShadow: '0 8px 32px rgba(0,0,0,0.12)',
+            }}
           >
-            <div className="flex items-center justify-between mb-4">
-              <button
-                onClick={() => setCalMonth(subMonths(calMonth, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400"
-              >
-                ‹
-              </button>
-              <span className="text-sm font-medium capitalize">
-                {format(calMonth, 'MMMM yyyy', { locale: es })}
-              </span>
-              <button
-                onClick={() => setCalMonth(addMonths(calMonth, 1))}
-                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-white/10 text-gray-400"
-              >
-                ›
-              </button>
+            {/* Step indicator */}
+            <div className="flex items-center gap-3 mb-5">
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{
+                    background: isMainStep ? '#2563eb' : '#22c55e',
+                    color: '#fff',
+                  }}
+                >
+                  {isMainStep ? '1' : '✓'}
+                </div>
+                <span className="text-xs font-medium" style={{ color: isMainStep ? '#2563eb' : '#22c55e' }}>
+                  Período principal
+                </span>
+              </div>
+              <div className="flex-1 h-px" style={{ background: 'var(--color-border)' }} />
+              <div className="flex items-center gap-2">
+                <div
+                  className="w-5 h-5 rounded-full flex items-center justify-center text-xs font-bold"
+                  style={{
+                    background: isCompareStep ? '#f97316' : 'var(--color-border)',
+                    color: isCompareStep ? '#fff' : 'var(--color-text-muted)',
+                  }}
+                >
+                  2
+                </div>
+                <span className="text-xs font-medium" style={{ color: isCompareStep ? '#f97316' : 'var(--color-text-muted)' }}>
+                  Comparar con
+                </span>
+              </div>
             </div>
 
-            <div className="grid grid-cols-7 gap-0 mb-1">
-              {['Do', 'Lu', 'Ma', 'Mi', 'Ju', 'Vi', 'Sa'].map((d) => (
-                <div key={d} className="text-center text-xs text-gray-500 py-1">{d}</div>
-              ))}
+            {/* Instruction */}
+            <p className="text-xs mb-4 text-center font-medium" style={{ color: 'var(--color-text-muted)' }}>
+              {stepLabels[step]}
+            </p>
+
+            {/* Two calendars side by side */}
+            <div className="flex gap-6">
+              <MiniCalendar
+                label="Período principal"
+                highlightStart={isMainStep && mainTempStart ? mainTempStart : dateRange.start}
+                highlightEnd={isMainStep ? null : dateRange.end}
+                tempStart={step === 'main-end' ? mainTempStart : null}
+                isSelectingEnd={step === 'main-end'}
+                color="#2563eb"
+                onDayClick={isMainStep ? handleMainDayClick : () => {}}
+              />
+
+              <div style={{ width: 1, background: 'var(--color-border)' }} />
+
+              <MiniCalendar
+                label="Comparar con"
+                highlightStart={isCompareStep && compareTempStart ? compareTempStart : previousRange.start}
+                highlightEnd={isCompareStep ? null : previousRange.end}
+                tempStart={step === 'compare-end' ? compareTempStart : null}
+                isSelectingEnd={step === 'compare-end'}
+                color="#f97316"
+                onDayClick={isCompareStep ? handleCompareDayClick : () => {}}
+              />
             </div>
 
-            <div className="grid grid-cols-7 gap-0">
-              {Array.from({ length: startOfWeek }).map((_, i) => <div key={`e-${i}`} />)}
-              {days.map((day) => {
-                const inRange = isRangeDay(day);
-                const isS = isStart(day);
-                const isE = isEnd(day);
-                const isTS = isTempStart(day);
-                const isToday = isSameDay(day, new Date());
-
-                return (
-                  <button
-                    key={day.toISOString()}
-                    onClick={() => handleDayClick(day)}
-                    className={`
-                      text-xs py-1.5 relative transition-colors
-                      ${isS || isE || isTS ? 'text-white font-semibold' : 'text-gray-300'}
-                      ${inRange ? 'bg-blue-500/20' : ''}
-                      ${isS || isTS ? 'bg-blue-500 rounded-l-full' : ''}
-                      ${isE && !isS ? 'bg-blue-500 rounded-r-full' : ''}
-                      ${isS && isE ? 'rounded-full' : ''}
-                      ${isToday && !isS && !isE && !isTS ? 'text-blue-400' : ''}
-                      hover:opacity-80
-                    `}
-                  >
-                    {format(day, 'd')}
-                  </button>
-                );
-              })}
-            </div>
-
-            {selecting === 'end' && tempStart && (
-              <p className="text-xs text-gray-400 mt-3 text-center">
-                Desde {formatDateShort(tempStart)} → seleccioná fecha fin
-              </p>
+            {/* Skip compare button */}
+            {isCompareStep && (
+              <div className="mt-4 flex justify-end">
+                <button
+                  className="btn text-xs"
+                  style={{ padding: '4px 12px' }}
+                  onClick={() => {
+                    setCalOpen(false);
+                    setStep('main-start');
+                    setCompareTempStart(null);
+                  }}
+                >
+                  Omitir comparación
+                </button>
+              </div>
             )}
           </div>
         )}
       </div>
 
+      {/* Date display */}
       <div className="flex items-center gap-2 text-xs" style={{ color: 'var(--color-text-muted)' }}>
-        <span>{formatDateShort(dateRange.start)} — {formatDateShort(dateRange.end)}</span>
+        <span
+          className="px-2 py-1 rounded-md font-medium"
+          style={{ background: 'rgba(37,99,235,0.08)', color: '#2563eb' }}
+        >
+          {formatDateShort(dateRange.start)} — {formatDateShort(dateRange.end)}
+        </span>
         <span className="opacity-50">vs</span>
-        <span className="opacity-60">{formatDateShort(previousRange.start)} — {formatDateShort(previousRange.end)}</span>
+        <span
+          className="px-2 py-1 rounded-md"
+          style={{ background: 'rgba(249,115,22,0.08)', color: '#f97316' }}
+        >
+          {formatDateShort(previousRange.start)} — {formatDateShort(previousRange.end)}
+        </span>
       </div>
     </div>
   );
