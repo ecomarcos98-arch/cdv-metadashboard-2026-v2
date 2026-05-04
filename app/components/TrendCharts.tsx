@@ -116,6 +116,7 @@ export default function TrendCharts({ dailyData, prevDailyData }: TrendChartsPro
         { key: 'vslToLead', label: 'VSL → Lead', color: '#8B5CF6' },
         { key: 'vslToSchedule', label: 'VSL → Agenda', color: '#14B8A6' },
         { key: 'vslToCheckout', label: 'VSL → Agenda Calif.', color: '#F97316' },
+        { key: 'leadToSchedule', label: 'Lead → Agenda', color: '#EC4899' },
       ],
       formatValue: (_, v) => (v !== null ? `${v.toFixed(1)}%` : '—'),
     },
