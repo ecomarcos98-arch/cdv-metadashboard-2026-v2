@@ -34,19 +34,11 @@ interface KpiCard {
 
 function buildCards(current: KpiMetrics, prev: KpiMetrics): { costs: KpiCard[]; percents: KpiCard[]; volumes: KpiCard[] } {
   const costs: KpiCard[] = [
-    { id: 'cpm', label: 'CPM', tooltip: 'Gasto / Impresiones × 1,000', value: current.cpm, prevValue: prev.cpm, type: 'cpm', changeDir: 'cost' },
-    { id: 'cpc', label: 'CPC', tooltip: 'Gasto / Clics únicos', value: current.cpc, prevValue: prev.cpc, type: 'cost', changeDir: 'cost' },
     { id: 'costPerLead', label: 'Costo / Lead', tooltip: 'Gasto / Leads', value: current.costPerLead, prevValue: prev.costPerLead, type: 'cost', changeDir: 'cost' },
     { id: 'costPerSchedule', label: 'Costo / Schedule', tooltip: 'Gasto / Schedules', value: current.costPerSchedule, prevValue: prev.costPerSchedule, type: 'cost', changeDir: 'cost' },
     { id: 'costPerCheckout', label: 'Costo / Agenda Calif.', tooltip: 'Gasto / Checkouts iniciados', value: current.costPerCheckout, prevValue: prev.costPerCheckout, type: 'cost', changeDir: 'cost' },
-    { id: 'costPerShow', label: 'Costo / Show', tooltip: 'Gasto / Shows asistidos — métrica global, no filtrable por campaña', value: current.costPerShow, prevValue: prev.costPerShow, type: 'cost', changeDir: 'cost', isGlobal: true },
   ];
   const percents: KpiCard[] = [
-    { id: 'ctr', label: 'CTR', tooltip: 'Clics únicos / Impresiones × 100', value: current.ctr, prevValue: prev.ctr, type: 'percent', changeDir: 'percent' },
-    { id: 'loadRate', label: '% Carga', tooltip: 'Landing Page Views / Clics × 100', value: current.loadRate, prevValue: prev.loadRate, type: 'percent', changeDir: 'percent' },
-    { id: 'vslToLead', label: '% VSL → Lead', tooltip: 'Leads / Landing Page Views × 100', value: current.vslToLead, prevValue: prev.vslToLead, type: 'percent', changeDir: 'percent' },
-    { id: 'leadToSchedule', label: '% Lead → Schedule', tooltip: 'Schedules / Leads × 100', value: current.leadToSchedule, prevValue: prev.leadToSchedule, type: 'percent', changeDir: 'percent' },
-    { id: 'scheduleToCheckout', label: '% Schedule → Agenda Calif.', tooltip: 'Checkouts / Schedules × 100', value: current.scheduleToCheckout, prevValue: prev.scheduleToCheckout, type: 'percent', changeDir: 'percent' },
     { id: 'showRate', label: '% Asistencia', tooltip: 'Shows asistidos / Schedules × 100 — métrica global, no filtrable por campaña', value: current.showRate, prevValue: prev.showRate, type: 'percent', changeDir: 'percent', isGlobal: true },
   ];
   const volumes: KpiCard[] = [
@@ -142,7 +134,7 @@ function SortableCard({ card }: { card: KpiCard }) {
         <div className="relative flex-shrink-0">
           <button
             className="w-4 h-4 rounded-full flex items-center justify-center text-xs"
-            style={{ background: 'rgba(255,255,255,0.07)', color: 'var(--color-text-muted)' }}
+            style={{ background: 'rgba(0,0,0,0.07)', color: 'var(--color-text-muted)' }}
             onMouseEnter={() => setTooltipVisible(true)}
             onMouseLeave={() => setTooltipVisible(false)}
           >
@@ -152,11 +144,12 @@ function SortableCard({ card }: { card: KpiCard }) {
             <div
               className="absolute right-0 top-6 z-50 text-xs rounded-lg px-3 py-2"
               style={{
-                background: 'var(--color-surface-2)',
-                border: '1px solid rgba(255,255,255,0.1)',
+                background: 'var(--color-surface)',
+                border: '1px solid var(--color-border)',
                 color: 'var(--color-text-muted)',
                 maxWidth: 220,
                 whiteSpace: 'normal',
+                boxShadow: '0 4px 16px rgba(0,0,0,0.1)',
               }}
             >
               {card.tooltip}

@@ -84,6 +84,7 @@ export default function Dashboard() {
 
   // Daily metrics: merge campaign-filtered meta days + global shows
   const dailyMetrics = calcDailyMetrics(filteredRows, currentShowsByDay);
+  const prevDailyMetrics = calcDailyMetrics(prevRows, prevShowsByDay);
 
   const allCampaignsSelected = selectedCampaigns.length === allCampaigns.length;
 
@@ -256,7 +257,7 @@ export default function Dashboard() {
               <h2 className="text-xs font-semibold uppercase tracking-wider mb-4" style={{ color: 'var(--color-text-muted)' }}>
                 Tendencias
               </h2>
-              <TrendCharts dailyData={dailyMetrics} />
+              <TrendCharts dailyData={dailyMetrics} prevDailyData={prevDailyMetrics} />
             </section>
 
             {/* Campaign Chart */}

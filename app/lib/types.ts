@@ -70,6 +70,9 @@ export interface DailyMetrics {
   leadToSchedule: number | null;
   scheduleToCheckout: number | null;
   showRate: number | null;
+  // VSL-based conversions
+  vslToSchedule: number | null;
+  vslToCheckout: number | null;
   amountSpent: number;
   leads: number;
   appointmentsScheduled: number;
